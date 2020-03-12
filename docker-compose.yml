@@ -1,0 +1,36 @@
+version: "3.3"
+
+services:
+  db:
+    image: mariadb:latest
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: verysecretpassword
+      MYSQL_DATABASE: rates
+      MYSQL_USER: rates
+      MYSQL_PASSWORD: rates
+
+  rates_service:
+    depends_on:
+      - db
+    build: .
+    image: zet4/rates
+    ports:
+      - "8080:3333"
+    restart: always
+    environment:
+      RATES_DATABASE: rates:rates@tcp(db:3306)/rates?parseTime=true
+
+  rates_collector:
+    depends_on:
+      - db
+    build: .
+    image: zet4/rates
+    entrypoint: ["crond", "-f", "-d", "8"]
+    restart: always
+    environment:
+      RATES_DATABASE: rates:rates@tcp(db:3306)/rates?parseTime=true
+volumes:
+  db_data: {}
